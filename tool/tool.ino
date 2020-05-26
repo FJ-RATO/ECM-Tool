@@ -1,10 +1,19 @@
 #include <LiquidCrystal.h>
 #include <DallasTemperature.h>
 #include <OneWire.h>
+#include <SD.h>
 
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 2 
+#define rst 1024
+
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensor(&oneWire);
+
+//Timer
+int timer = 0;
+
+//SD card
+const int chipSelect = 10;
 
 //LCD pin to Arduino
 const int pin_RS = 8; 
@@ -28,10 +37,27 @@ void setup() {
   lcd.setCursor(0,1);
   lcd.print("T3:  C|T4:  C");
   Serial.begin(9600);
+
+  if (!SD.begin(chipSelect)) 
+    Serial.println("Card failed, or not present");
+  else
+    Serial.println("SD ok");
+
+  
+
 }
 void loop() {
+  int count = 0;
   int temp[] = {read_temp(0),read_temp(1),read_temp(2),read_temp(3)};
   send2lcd(temp);
+  
+  if (timer > rst){
+    while(count < 4){
+    writeSD(count, temp[count]);
+    count++;}
+    timer = 0;}
+  else
+    timer++;
 }
 
 int read_temp(int address){
@@ -72,4 +98,16 @@ bool validate(int value){
     return true;
   else
     return false;
+  }
+  
+void writeSD(int prob ,int temp){
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  if (dataFile) {
+    dataFile.print("Probe id: ");
+    dataFile.print(prob);
+    dataFile.print(" => ");
+    dataFile.println(temp);
+    dataFile.close();
+    Serial.println("Card save");
+  }
   }
