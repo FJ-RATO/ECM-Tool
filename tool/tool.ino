@@ -4,13 +4,14 @@
 #include <SD.h>
 
 #define ONE_WIRE_BUS 2 
-#define rst 1024
+
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensor(&oneWire);
 
 //Timer
 int timer = 0;
+int rst = 1;
 
 //SD card
 const int chipSelect = 10;
@@ -38,7 +39,7 @@ void setup() {
   lcd.print("T3:  C|T4:  C");
   Serial.begin(9600);
 
-  if (!SD.begin(chipSelect)) 
+  if (!SD.begin(chipSelect)) //checks for the card
     Serial.println("Card failed, or not present");
   else
     Serial.println("SD ok");
@@ -47,26 +48,26 @@ void setup() {
 
 }
 void loop() {
-  int count = 0;
+  
   int temp[] = {read_temp(0),read_temp(1),read_temp(2),read_temp(3)};
+
   send2lcd(temp);
   
   if (timer > rst){
-    while(count < 4){
-    writeSD(count, temp[count]);
-    count++;}
+    writeSD(temp);
     timer = 0;}
-  else
+  else{
     timer++;
+    }
 }
 
-int read_temp(int address){
+int read_temp(int address){ //reads the temp by IC2
   sensor.requestTemperaturesByIndex(address);
   int leitura = sensor.getTempCByIndex(address);
   return leitura;
   }
   
-void send2lcd(int temp[]){
+void send2lcd(int temp[]){ //writes on the display the temps
   lcd.setCursor(3,0);
   if(validate(temp[0]))
     lcd.print(temp[0]);
@@ -93,21 +94,26 @@ void send2lcd(int temp[]){
    
   }
 
-bool validate(int value){
+bool validate(int value){ //checks if the temp os valid
   if((value != -127)&&(value != 85))
     return true;
   else
     return false;
   }
   
-void writeSD(int prob ,int temp){
+void writeSD(int temp[]){ //writes on the SD card the temps
+  int count = 0;
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
   if (dataFile) {
+    while(count < 4){
     dataFile.print("Probe id: ");
-    dataFile.print(prob);
+    dataFile.print(count);
     dataFile.print(" => ");
-    dataFile.println(temp);
-    dataFile.close();
+    dataFile.println(temp[count]);
     Serial.println("Card save");
+    count++;
+    }
+    dataFile.println("===========");
+    dataFile.close();
   }
-  }
+}
