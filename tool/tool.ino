@@ -9,6 +9,10 @@
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensor(&oneWire);
 
+//delay
+
+int wait = 0;
+int timestamp = 0;
 //SD card
 const int chipSelect = 10;
 
@@ -55,8 +59,8 @@ void loop() {
   int temp[] = {read_temp(0),read_temp(1),read_temp(2),read_temp(3)};
 
   send2lcd(temp);
-  
-  writeSD(temp,power(analogRead(pin_A3)));
+  int  pw = power();
+  writeSD(temp,pw);
   
 }
 
@@ -83,17 +87,24 @@ void showpw(int button){
   }
   }
   
-int power(int pw){
-  if(pw == 0)//the engine is off
-    delay(5000);
+int power(){
+  int pw = 0;
+  while( pw == 0 ){
+    pw = analogRead(pin_A3);}// to clean false 0's
+  
+  if(pw < 10)//the engine is off
+    wait = 5000;
+    delay(wait);
 
-  if((pw > 0) && (pw < 100)) //low
-    delay(1000);
+  if((pw > 10) && (pw < 100)) //low
+    wait = 1000;
+    delay(wait);
 
   if(pw > 100)//high
-    delay(500);
-    
-  return pw;
+    wait = 500;
+    delay(wait);
+
+    return pw;
   }
 
 int read_temp(int address){ //reads the temp by IC2
@@ -145,13 +156,19 @@ void writeSD(int temp[], int pw){ //writes on the SD card the temps
     dataFile.print(count);
     dataFile.print(" => ");
     dataFile.println(temp[count]);
-    Serial.println("Card save");
     count++;
     }
+    pw = (pw * 220)/100; //pw is now wattage
     dataFile.print("Power: ");
     dataFile.print(" => ");
     dataFile.println(pw);
+    dataFile.print("TimeStamp: ");
+    dataFile.print(" => ");
+    dataFile.println(timestamp);
+    wait = wait / 100;
+    timestamp = timestamp + wait;
     dataFile.println("===========");
     dataFile.close();
+    Serial.println("Card save");
   }
 }
