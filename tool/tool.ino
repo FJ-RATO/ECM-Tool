@@ -10,9 +10,9 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensor(&oneWire);
 
 //delay
-
 int wait = 0;
 int timestamp = 0;
+
 //SD card
 const int chipSelect = 10;
 
@@ -26,9 +26,12 @@ const int pin_d4 = 4;
 const int pin_d5 = 5; 
 const int pin_d6 = 6; 
 const int pin_d7 = 7; 
-const int pin_BL = 10; 
+
 LiquidCrystal lcd( pin_RS,  pin_EN,  pin_d4,  pin_d5,  pin_d6,  pin_d7);
+
 void setup() {
+  
+  Serial.begin(9600);
   lcd.begin(16, 2);
   lcd.setCursor(0,0);
   lcd.print("[ESM tools]");
@@ -40,12 +43,12 @@ void setup() {
   lcd.print("T1:    T2:   ");
   lcd.setCursor(0,1);
   lcd.print("T3:    T4:   ");
-  Serial.begin(9600);
+  
 
-  if (!SD.begin(chipSelect)) //checks for the card
-    Serial.println("Card failed, or not present");
-  else
+  if (SD.begin(chipSelect)) //checks for the card
     Serial.println("SD ok");
+  else
+    Serial.println("Card failed, or not present");
 
   
 
@@ -64,7 +67,7 @@ void loop() {
   
 }
 
-void boot(){
+void boot(){ // cleans the lcd to display temps
   lcd.setCursor(0,0);
   lcd.print("T1:");
   lcd.setCursor(7,0);
@@ -75,7 +78,7 @@ void boot(){
   lcd.print("T4:");
   }
 
-void showpw(int button){
+void showpw(int button){ // shows power on the LCD
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("V:");
@@ -87,11 +90,12 @@ void showpw(int button){
   }
   }
   
-int power(){
+int power(){ // reads power
   int pw = 0;
   while( pw == 0 ){
     pw = analogRead(pin_A3);}// to clean false 0's
   
+  /*
   if(pw < 10)//the engine is off
     wait = 5000;
     delay(wait);
@@ -103,11 +107,12 @@ int power(){
   if(pw > 100)//high
     wait = 500;
     delay(wait);
+  */
 
     return pw;
   }
 
-int read_temp(int address){ //reads the temp by IC2
+int read_temp(int address){ //reads the temp by IC2, black prob2 is dead
   sensor.requestTemperaturesByIndex(address);
   int leitura = sensor.getTempCByIndex(address);
   return leitura;
